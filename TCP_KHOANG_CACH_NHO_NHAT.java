@@ -28,11 +28,11 @@ public class TCP_KHOANG_CACH_NHO_NHAT {
 
     public static void main(String[] args) throws Exception {
 
-        String host = "localhost"; // đổi nếu server khác máy
+        String host = "36.50.135.242"; // đổi nếu server khác máy
         int port = 2206;
 
-        String studentCode = "B15DCCN999";
-        String qCode = "TbzkNfL3";
+        String studentCode = "B22DCCN760";
+        String qCode = "C7LzCnrA";
 
         Socket socket = new Socket(host, port);
 

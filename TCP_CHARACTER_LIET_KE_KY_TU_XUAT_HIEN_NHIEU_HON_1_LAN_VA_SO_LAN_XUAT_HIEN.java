@@ -23,11 +23,11 @@ import java.util.Map;
 public class TCP_CHARACTER_LIET_KE_KY_TU_XUAT_HIEN_NHIEU_HON_1_LAN_VA_SO_LAN_XUAT_HIEN {
 
     public static void main(String[] args) {
-        String serverIp = "203.162.10.109"; // 👉 khi thi đổi thành Exam_IP
+        String serverIp = "36.50.135.242";
         int port = 2208;
 
-        String studentCode = "B22DCCN760"; // 🔴 SỬA MÃ SV
-        String qCode = "qosGpnIW";
+        String studentCode = "B22DCCN760";
+        String qCode = "9z6g3v5H";
 
         try (Socket socket = new Socket(serverIp, port)) {
 
@@ -36,15 +36,12 @@ public class TCP_CHARACTER_LIET_KE_KY_TU_XUAT_HIEN_NHIEU_HON_1_LAN_VA_SO_LAN_XUA
             BufferedReader br = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
 
-            /* a. Gửi studentCode;qCode */
             bw.write(studentCode + ";" + qCode);
             bw.newLine();
             bw.flush();
 
-            /* b. Nhận chuỗi từ server */
             String input = br.readLine();
 
-            /* c. Đếm ký tự xuất hiện > 1 lần */
             Map<Character, Integer> countMap = new LinkedHashMap<>();
 
             for (char c : input.toCharArray()) {
@@ -63,7 +60,6 @@ public class TCP_CHARACTER_LIET_KE_KY_TU_XUAT_HIEN_NHIEU_HON_1_LAN_VA_SO_LAN_XUA
                 }
             }
 
-            /* gửi kết quả */
             bw.write(result.toString());
             bw.newLine();
             bw.flush();
