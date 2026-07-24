@@ -1,90 +1,136 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+// BÀI 2. SẢN PHẨM [Object]
+// [Mã câu hỏi (qCode): kZqFKEDL]. Thông tin sản phẩm vì một lý do nào đó đã bị sửa đổi thành
+// không đúng, cụ thể:
+// a. Tên sản phẩm bị đổi ngược từ đầu tiên và từ cuối cùng, ví dụ: “lenovo thinkpad T520” bị
+// chuyển thành “T520 thinkpad lenovo”
+// b. Số lượng sản phẩm cũng bị đảo ngược giá trị, ví dụ từ 9981 thành 1899
+// Một chương trình server cho phép giao tiếp qua giao thức UDP tại cổng 2209. Yêu cầu là xây dựng
+// một chương trình client giao tiếp với server để gửi/nhận các sản phẩm theo mô tả dưới đây:
+// a. Đối tượng trao đổi là thể hiện của lớp Product được mô tả như sau
+// • Tên đầy đủ của lớp: UDP.Product
+// • Các thuộc tính: id String, code String, name String, quantity int
+// • Một hàm khởi tạo có đầy đủ các thuộc tính được liệt kê ở trên
+// • Trường dữ liệu: private static final long serialVersionUID = 20161107;
+// b. Giao tiếp với server theo kịch bản
+// • Gửi thông điệp là một chuỗi chứa mã sinh viên và mã câu hỏi theo định dạng
+// “;studentCode;qCode”. Ví dụ: “;B15DCCN001;EE29C059”
+// • Nhận thông điệp chứa: 08 byte đầu chứa chuỗi requestId, các byte còn lại chứa một đối
+// tượng là thể hiện của lớp Product từ server. Trong đối tượng này, các thuộc tính id, name và quantity
+// đã được thiết lập giá trị.
+// • Sửa các thông tin sai của đối tượng về tên và số lượng như mô tả ở trên và gửi đối tượng
+// vừa được sửa đổi lên server theo cấu trúc:
+// 08 byte đầu chứa chuỗi requestId và các byte còn lại chứa đối tượng Product đã được sửa đổi.
+// • Đóng socket và kết thúc chương trình.
+
 package UDP;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class UDP_CHUAN_HOA_SAN_PHAM_LAPTOP {
+public class UDPClient {
 
     public static void main(String[] args) throws Exception {
 
-        String serverHost = "203.162.10.109";
-        int serverPort = 2209;
+        String host = "172.188.19.218";
+        int port = 2209;
 
-        String studentCode = "B22DCCN016";
-        String qCode = "CRiaq6tV";
+        String studentCode = "B22DCCN760";
+        String qCode = "kZqFKEDL";
 
         DatagramSocket socket = new DatagramSocket();
-        InetAddress serverAddress = InetAddress.getByName(serverHost);
+        InetAddress server = InetAddress.getByName(host);
 
-        /* a. Gửi mã sinh viên + mã câu hỏi */
-        String msg = ";" + studentCode + ";" + qCode;
-        byte[] sendData = msg.getBytes();
+        String message = ";" + studentCode + ";" + qCode;
 
-        DatagramPacket sendPacket =
-                new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
+        byte[] sendData = message.getBytes("UTF-8");
+
+        DatagramPacket sendPacket = new DatagramPacket(
+                sendData,
+                sendData.length,
+                server,
+                port
+        );
+
         socket.send(sendPacket);
 
-        /* b. Nhận requestId + Product */
         byte[] receiveData = new byte[4096];
-        DatagramPacket receivePacket =
-                new DatagramPacket(receiveData, receiveData.length);
+
+        DatagramPacket receivePacket = new DatagramPacket(
+                receiveData,
+                receiveData.length
+        );
+
         socket.receive(receivePacket);
 
         byte[] data = receivePacket.getData();
 
-        // Lấy requestId (8 byte đầu)
-        byte[] requestIdBytes = new byte[8];
-        System.arraycopy(data, 0, requestIdBytes, 0, 8);
+        String requestId = new String(data, 0, 8);
 
-        // Lấy object Product
-        ByteArrayInputStream bais =
-                new ByteArrayInputStream(data, 8, receivePacket.getLength() - 8);
-        ObjectInputStream ois = new ObjectInputStream(bais);
+        ByteArrayInputStream bis = new ByteArrayInputStream(
+                data,
+                8,
+                receivePacket.getLength() - 8
+        );
+
+        ObjectInputStream ois = new ObjectInputStream(bis);
+
         Product product = (Product) ois.readObject();
 
-        /* c. SỬA THÔNG TIN */
+        product.setName(fixName(product.getName()));
+        product.setQuantity(reverse(product.getQuantity()));
 
-        // 🔹 Sửa tên: đảo từ đầu và từ cuối
-        String[] words = product.getName().split(" ");
-        if (words.length >= 2) {
-            String temp = words[0];
-            words[0] = words[words.length - 1];
-            words[words.length - 1] = temp;
-        }
-        StringBuilder fixedName = new StringBuilder();
-        for (String w : words) {
-            fixedName.append(w).append(" ");
-        }
-        product.setName(fixedName.toString().trim());
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-        // 🔹 Sửa số lượng: đảo chữ số
-        String reversedQty =
-                new StringBuilder(String.valueOf(product.getQuantity()))
-                        .reverse().toString();
-        product.setQuantity(Integer.parseInt(reversedQty));
+        bos.write(requestId.getBytes("UTF-8"));
 
-        /* d. Gửi lại requestId + Product đã sửa */
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+
         oos.writeObject(product);
         oos.flush();
 
-        byte[] productBytes = baos.toByteArray();
-        byte[] finalData = new byte[8 + productBytes.length];
+        sendData = bos.toByteArray();
 
-        System.arraycopy(requestIdBytes, 0, finalData, 0, 8);
-        System.arraycopy(productBytes, 0, finalData, 8, productBytes.length);
+        sendPacket = new DatagramPacket(
+                sendData,
+                sendData.length,
+                server,
+                port
+        );
 
-        DatagramPacket finalPacket =
-                new DatagramPacket(finalData, finalData.length, serverAddress, serverPort);
-        socket.send(finalPacket);
+        socket.send(sendPacket);
 
         socket.close();
+    }
+
+    private static String fixName(String name) {
+
+        String[] words = name.trim().split("\\s+");
+
+        if (words.length < 2) {
+            return name;
+        }
+
+        String temp = words[0];
+        words[0] = words[words.length - 1];
+        words[words.length - 1] = temp;
+
+        return String.join(" ", words);
+    }
+
+    private static int reverse(int n) {
+
+        int result = 0;
+
+        while (n > 0) {
+            result = result * 10 + n % 10;
+            n /= 10;
+        }
+
+        return result;
     }
 }

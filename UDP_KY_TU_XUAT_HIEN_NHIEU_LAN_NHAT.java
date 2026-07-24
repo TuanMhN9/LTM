@@ -16,7 +16,7 @@
 //ví dụ: “requestId;8:4,9,”
 //d. Đóng socket và kết thúc chương trình
 
-package LTM;
+ppackage javaapplication2;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,55 +26,58 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class UDP_KY_TU_XUAT_HIEN_NHIEU_LAN_NHAT {
+public class UDP_KY_TU_XUAT_HIEN_NHIEU_NHAT {
 
     public static void main(String[] args) throws Exception {
 
-        String serverHost = "172.188.19.218";
+        String serverHost = "36.50.135.242";
         int serverPort = 2208;
 
-        String studentCode = "B15DCCN001";
-        String qCode = "CvlqJmaa";
+        String studentCode = "B22DCCN760";
+        String qCode = "SDfTtrEI";
 
         DatagramSocket socket = new DatagramSocket();
         InetAddress serverAddress = InetAddress.getByName(serverHost);
 
-        /* a. Gửi studentCode và qCode */
+        // a. Gửi studentCode;qCode
         String sendMsg = ";" + studentCode + ";" + qCode;
         byte[] sendData = sendMsg.getBytes();
+
         DatagramPacket sendPacket =
                 new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
         socket.send(sendPacket);
 
-        /* b. Nhận dữ liệu từ server */
+        // b. Nhận dữ liệu
         byte[] receiveData = new byte[4096];
         DatagramPacket receivePacket =
                 new DatagramPacket(receiveData, receiveData.length);
         socket.receive(receivePacket);
 
-        String received =
-                new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
+        String received = new String(
+                receivePacket.getData(),
+                0,
+                receivePacket.getLength()
+        ).trim();
 
         String[] parts = received.split(";", 2);
         String requestId = parts[0];
         String data = parts[1];
 
-        /* c. Xử lý */
+        // c. Đếm số lần xuất hiện và lưu vị trí (bắt đầu từ 1)
         Map<Character, List<Integer>> map = new LinkedHashMap<>();
 
         for (int i = 0; i < data.length(); i++) {
             char c = data.charAt(i);
             map.putIfAbsent(c, new ArrayList<>());
-            map.get(c).add(i);
+            map.get(c).add(i + 1);
         }
 
         char maxChar = 0;
         int maxCount = 0;
 
         for (Map.Entry<Character, List<Integer>> entry : map.entrySet()) {
-            int count = entry.getValue().size();
-            if (count > maxCount) {
-                maxCount = count;
+            if (entry.getValue().size() > maxCount) {
+                maxCount = entry.getValue().size();
                 maxChar = entry.getKey();
             }
         }
@@ -86,14 +89,19 @@ public class UDP_KY_TU_XUAT_HIEN_NHIEU_LAN_NHAT {
             result.append(pos).append(",");
         }
 
-        /* gửi kết quả */
+        // d. Gửi kết quả
         byte[] responseData = result.toString().getBytes();
+
         DatagramPacket responsePacket =
-                new DatagramPacket(responseData, responseData.length,
-                        serverAddress, serverPort);
+                new DatagramPacket(
+                        responseData,
+                        responseData.length,
+                        serverAddress,
+                        serverPort
+                );
+
         socket.send(responsePacket);
 
-        /* d. Đóng socket */
         socket.close();
     }
 }
